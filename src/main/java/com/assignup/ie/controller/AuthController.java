@@ -1,5 +1,7 @@
 package com.assignup.ie.controller;
 
+import javax.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.assignup.ie.entity.AppUser;
+import com.assignup.ie.payload.JwtResponse;
+import com.assignup.ie.payload.LoginRequest;
 import com.assignup.ie.payload.SignupRequest;
 import com.assignup.ie.service.AppUserService;
 import com.assignup.ie.service.ConfirmationTokenService;
@@ -34,6 +38,11 @@ public class AuthController {
 	@GetMapping("/verification")
 	public ResponseEntity<Boolean> verifyUser(@RequestParam("token") String token){
 		return new ResponseEntity<>(confirmationTokenService.verifyToken(token), HttpStatus.OK);
+	}
+	
+	@PostMapping("/login")
+	public ResponseEntity<JwtResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest){
+		return new ResponseEntity<>(userDetailsService.authenticateUser(loginRequest.getUsername(), loginRequest.getPassword()), HttpStatus.OK);
 	}
 	
 }

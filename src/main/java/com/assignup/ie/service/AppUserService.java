@@ -1,8 +1,14 @@
 package com.assignup.ie.service;
 
 import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -14,8 +20,10 @@ import com.assignup.ie.constants.UserRole;
 import com.assignup.ie.email.EmailSender;
 import com.assignup.ie.entity.AppUser;
 import com.assignup.ie.entity.ConfirmationToken;
+import com.assignup.ie.payload.JwtResponse;
 import com.assignup.ie.payload.SignupRequest;
 import com.assignup.ie.repository.AppUserRepository;
+import com.assignup.ie.security.jwt.JwtUtils;
 
 @Service
 public class AppUserService implements UserDetailsService{
@@ -31,6 +39,12 @@ public class AppUserService implements UserDetailsService{
 	
 	@Autowired
 	private EmailSender emailSender;
+	
+	@Autowired
+	AuthenticationManager authenticationManager;
+	
+	@Autowired
+	JwtUtils jwtUtils;
 	
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -69,6 +83,20 @@ public class AppUserService implements UserDetailsService{
 		AppUser disabledUser= appUserRepository.findByEmail(email);
 		disabledUser.setEnabled(true);
 		appUserRepository.save(disabledUser);
+	}
+
+
+	public JwtResponse authenticateUser(String username, String password) {
+		Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+		System.out.println(authentication);
+		SecurityContextHolder.getContext().setAuthentication(authentication);
+		String jwt = jwtUtils.generateJwtToken(authentication);
+		AppUser userDetails = (AppUser) authentication.getPrincipal();
+		List<String> roles = userDetails.getAuthorities().stream()
+				.map(item -> item.getAuthority())
+				.collect(Collectors.toList());
+		return new JwtResponse(jwt, userDetails.getUserId(), userDetails.getUsername(), userDetails.getPassword(), roles);
+		
 	}
 	
 	
